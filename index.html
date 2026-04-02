@@ -1,264 +1,185 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ortho Smile System | Dr. Adelma Maryam</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <title>أورثو سمايل - نظام الحجز الذكي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --emerald: #064e3b; --gold: #ca8a04; --bg: #f8fafc; }
-        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); color: #1e293b; overflow-x: hidden; }
-        .bg-gradient-clinic { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); }
-        .card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .btn-primary { background-color: var(--emerald); color: white; transition: 0.3s; cursor: pointer; border: none; }
-        .btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
-        .input-field { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; outline: none; transition: 0.3s; }
-        .input-field:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.1); }
-        .logo-img { width: 55px; height: 55px; border-radius: 12px; object-fit: cover; background: #eee; }
-        .animate-status { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        :root { --primary: #004d40; --gold: #d4af37; --bg: #f4f7f6; --danger: #c62828; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; direction: rtl; }
+        .app-card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 6px solid var(--gold); }
+        .logo-section { text-align: center; margin-bottom: 25px; cursor: pointer; user-select: none; }
+        .logo-btn { width: 80px; height: 80px; background: var(--primary); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 24px; font-weight: bold; border: 3px solid var(--gold); transition: 0.3s; }
+        .logo-btn:active { transform: scale(0.9); }
+        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; outline: none; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { opacity: 0.9; }
+        .status-alert { background: #ffebee; color: var(--danger); padding: 12px; border-radius: 10px; display: none; font-weight: bold; font-size: 14px; margin-bottom: 10px; border-right: 4px solid var(--danger); }
+        /* لوحة المدير */
+        .admin-panel { display: none; background: #f1f8e9; border: 2px dashed var(--primary); padding: 20px; border-radius: 20px; margin-top: 20px; text-align: right; }
+        .appointment-box { background: white; padding: 15px; margin: 10px 0; border-radius: 12px; border-right: 5px solid var(--gold); position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-del { background: var(--danger); width: auto; padding: 5px 15px; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyB7FloF9EzWdBfzVhDxO6xtH4JGPoPKPm0",
-        authDomain: "orthosmile-eae67.firebaseapp.com",
-        databaseURL: "https://orthosmile-eae67-default-rtdb.europe-west1.firebasedatabase.app/", 
-        projectId: "orthosmile-eae67",
-        storageBucket: "orthosmile-eae67.firebasestorage.app",
-        messagingSenderId: "584825174344",
-        appId: "1:584825174344:web:05fa016a168d7f47249b7d"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-</script>
+<div class="app-card" id="userApp">
+    <div class="logo-section" onclick="triggerAdmin()">
+        <div class="logo-btn">OS</div>
+        <h2 style="color: var(--primary); margin: 0;">أورثو سمايل</h2>
+        <p style="color: #666; font-size: 14px;">عيادة تقويم الأسنان - المنيعة</p>
+    </div>
 
-<div class="max-w-md mx-auto p-4 space-y-5">
-    <nav class="card flex justify-between items-center p-3">
-        <div class="flex items-center gap-3 cursor-pointer" id="adminTrigger">
-            <img src="logo.png" class="logo-img" onerror="this.src='https://via.placeholder.com/60/064e3b/ffffff?text=OS'"> 
-            <div>
-                <h1 class="text-sm font-bold text-emerald-900">أورثو سمايل</h1>
-                <p class="text-[8px] text-gray-400 font-bold uppercase">Dr. Adelma Maryam</p>
-            </div>
-        </div>
-        <button id="logoutBtn" class="hidden text-[10px] text-red-500 font-bold bg-red-50 px-2 py-1 rounded-lg">خروج</button>
-    </nav>
-
-    <section id="loginScreen" class="card p-6 space-y-4">
-        <div class="text-center space-y-1">
-            <h2 class="text-lg font-bold text-emerald-900">حجز موعد جديد</h2>
-            <p class="text-[10px] text-gray-400">أهلاً بك في عيادة تقويم الأسنان المنيعة</p>
-        </div>
+    <div id="formSection">
+        <input type="text" id="nameInput" placeholder="الاسم الكامل للمريض">
+        <input type="tel" id="phoneInput" placeholder="رقم الهاتف (05/06/07XXXXXXXX)" maxlength="10">
+        <input type="date" id="dateInput" onchange="validateDay()">
         
-        <input type="text" id="pName" placeholder="الاسم الكامل" class="input-field text-right" onkeypress="handleEnter(event, 'pArea')">
-        <input type="text" id="pArea" placeholder="المنطقة / الحي" class="input-field text-right" onkeypress="handleEnter(event, 'pPhone')">
+        <div id="msgBox" class="status-alert"></div>
         
-        <div class="relative">
-            <input type="tel" id="pPhone" class="input-field text-left" dir="ltr" placeholder="06XXXXXXXX" oninput="toggleHint()" onkeypress="handleEnter(event, 'regBtn')">
-            <p id="phoneHint" class="absolute top-3 right-3 text-[9px] text-gray-300 pointer-events-none">يرجى ادخال رقم هاتف صحيح للتواصل مع العيادة</p>
-        </div>
+        <select id="timeInput">
+            <option value="">اختر التاريخ أولاً</option>
+        </select>
+        
+        <button id="mainBtn" onclick="handleBooking()">تأكيد الحجز الآن</button>
+    </div>
 
-        <button id="regBtn" onclick="register()" class="w-full btn-primary py-4 rounded-xl font-bold shadow-lg">إرسال طلب الموعد</button>
-    </section>
+    <div id="adminArea" class="admin-panel">
+        <h3 style="color: var(--primary); text-align: center;">⚙️ لوحة الإدارة</h3>
+        
+        <label>الحد الأقصى للمرضى يومياً:</label>
+        <input type="number" id="limitConfig" placeholder="مثلاً: 10">
+        <button onclick="saveLimit()">حفظ التعديل</button>
 
-    <section id="patientDashboard" class="hidden space-y-4">
-        <div id="statusCard" class="p-6 rounded-[2rem] text-white shadow-xl bg-gradient-clinic relative overflow-hidden">
-            <p class="text-[10px] opacity-80 mb-1">المريض: <span id="displayPName"></span></p>
-            <h2 id="displayStatus" class="text-lg font-bold">جاري المزامنة...</h2>
-        </div>
+        <hr style="margin: 20px 0; border: 0.5px solid #ccc;">
+        
+        <label>إغلاق تاريخ استثنائي (عطلة):</label>
+        <input type="date" id="blockDate">
+        <button onclick="addOffDay()" style="background: #555;">إغلاق هذا اليوم</button>
 
-        <div class="grid grid-cols-3 gap-2">
-            <a id="uiFB" target="_blank" class="card p-3 flex flex-col items-center bg-blue-50 border-blue-100">
-                <span class="text-[10px] font-bold text-blue-700">فيسبوك</span>
-            </a>
-            <a id="uiLoc" target="_blank" class="card p-3 flex flex-col items-center bg-red-50 border-red-100">
-                <span class="text-[10px] font-bold text-red-700">الموقع</span>
-            </a>
-            <a id="uiCall" class="card p-3 flex flex-col items-center bg-green-50 border-green-100">
-                <span class="text-[10px] font-bold text-green-700">اتصال</span>
-            </a>
-        </div>
-    </section>
-
-    <section id="adminDashboard" class="hidden space-y-4">
-        <div class="card bg-gray-900 text-white flex justify-between items-center py-4 px-5">
-            <h2 class="font-bold text-xs">إدارة العيادة</h2>
-            <button onclick="location.reload()" class="text-[10px] bg-red-600 px-3 py-1 rounded-lg">إغلاق</button>
-        </div>
-
-        <div class="card p-4 space-y-3">
-            <p class="text-[11px] font-bold text-emerald-900 border-b pb-2">تحديث معلومات التواصل للعيادة:</p>
-            <input type="text" id="inFB" placeholder="رابط الفيسبوك" class="input-field text-xs">
-            <input type="text" id="inLoc" placeholder="إحداثيات الموقع (GPS)" class="input-field text-xs">
-            <input type="text" id="inPhone" placeholder="رقم هاتف العيادة" class="input-field text-xs">
-            <button onclick="saveSettings()" class="w-full py-2 bg-emerald-50 text-emerald-800 rounded-lg font-bold text-xs border border-emerald-100">حفظ بيانات التواصل</button>
-        </div>
-
-        <div class="card p-4 space-y-4">
-            <p class="text-[11px] font-bold text-emerald-900">الأجندة وإدارة المواعيد:</p>
-            <input type="date" id="adminDate" onchange="loadDateData()" class="input-field">
-            
-            <div id="dateDetails" class="hidden space-y-3">
-                <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg border">
-                    <span class="text-[10px]">الحد الأقصى للمرضى:</span>
-                    <input type="number" id="inLimit" value="5" class="w-12 text-center border rounded">
-                </div>
-                <div id="adminPatientList" class="space-y-2"></div>
-            </div>
-        </div>
-    </section>
+        <h4>المواعيد المحجوزة:</h4>
+        <div id="bookingList">جاري التحميل...</div>
+        <button onclick="location.reload()" style="background:#777">خروج من الإدارة</button>
+    </div>
 </div>
 
 <script>
-    let activePhone = localStorage.getItem('active_phone');
-    let registeredPhones = JSON.parse(localStorage.getItem('my_patients')) || [];
+    // --- إعدادات Firebase (يجب وضع بياناتك هنا) ---
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    function handleEnter(e, nextId) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            const nextEl = document.getElementById(nextId);
-            if (nextEl) nextEl.focus();
-            if (nextId === 'regBtn') register();
+    // --- منطق الحجز والتحقق ---
+    async function validateDay() {
+        const date = document.getElementById('dateInput').value;
+        const msg = document.getElementById('msgBox');
+        const btn = document.getElementById('mainBtn');
+        const select = document.getElementById('timeInput');
+        
+        // 1. منع الجمعة
+        if (new Date(date).getDay() === 5) {
+            return showAlert("العيادة مغلقة يوم الجمعة");
+        }
+
+        // 2. التحقق من أيام العطل اليدوية
+        const offDays = await db.ref('offDays').once('value');
+        let isClosed = false;
+        offDays.forEach(d => { if(d.val() === date) isClosed = true; });
+        if (isClosed) return showAlert("نعتذر، العيادة مغلقة في هذا التاريخ");
+
+        // 3. التحقق من الحد اليومي
+        const limitSnap = await db.ref('settings/limit').once('value');
+        const maxLimit = limitSnap.val() || 10; // 10 كحد افتراضي
+        
+        const bookingsSnap = await db.ref('bookings').orderByChild('date').equalTo(date).once('value');
+        const count = bookingsSnap.numChildren();
+
+        if (count >= maxLimit) {
+            return showAlert(`اكتملت المواعيد (الحد ${maxLimit} مرضى يومياً)`);
+        }
+
+        // إذا كان متاحاً
+        msg.style.display = 'none';
+        btn.style.display = 'block';
+        select.innerHTML = '';
+        for (let h=9; h<17; h++) {
+            let t = h + ":00";
+            let opt = document.createElement('option'); opt.value = t; opt.text = t; select.appendChild(opt);
         }
     }
 
-    function toggleHint() {
-        document.getElementById('phoneHint').style.display = document.getElementById('pPhone').value ? 'none' : 'block';
+    function showAlert(txt) {
+        const msg = document.getElementById('msgBox');
+        msg.innerText = "⚠️ " + txt;
+        msg.style.display = 'block';
+        document.getElementById('mainBtn').style.display = 'none';
+        document.getElementById('timeInput').innerHTML = '<option>غير متاح</option>';
     }
 
-    // التسجيل والأمان
-    function register() {
-        const name = document.getElementById('pName').value.trim();
-        const area = document.getElementById('pArea').value.trim();
-        const phone = document.getElementById('pPhone').value.trim();
+    function handleBooking() {
+        const n = document.getElementById('nameInput').value;
+        const p = document.getElementById('phoneInput').value;
+        const d = document.getElementById('dateInput').value;
+        const t = document.getElementById('timeInput').value;
+        const phoneReg = /^(05|06|07)[0-9]{8}$/;
 
-        if(!name || !phone) return alert("يرجى ملء الاسم والهاتف");
-
-        if(registeredPhones.length >= 2 && !registeredPhones.includes(phone)) {
-            return alert("عذراً، يمكنك تسجيل مريضين فقط من هذا الجهاز");
+        if (!n || !phoneReg.test(p) || !d || !t) {
+            alert("يرجى إدخال اسمك ورقم هاتف صحيح مكون من 10 أرقام (05/06/07)");
+            return;
         }
 
-        db.ref('appointments').once('value', snap => {
-            let exists = false;
-            snap.forEach(c => { if(c.val().patientPhone === phone && c.val().status === 'pending') exists = true; });
-            
-            if(exists) { alert("لديك طلب نشط بالفعل"); login(phone); }
-            else {
-                db.ref('appointments').push({
-                    patientName: name, patientArea: area, patientPhone: phone,
-                    status: 'pending', createdAt: Date.now()
-                });
-                if(!registeredPhones.includes(phone)) registeredPhones.push(phone);
-                localStorage.setItem('my_patients', JSON.stringify(registeredPhones));
-                login(phone);
-            }
+        db.ref('bookings').push({ name: n, phone: p, date: d, time: t }).then(() => {
+            alert("تم تسجيل موعدك بنجاح! ننتظركم في العيادة.");
+            location.reload();
         });
     }
 
-    function login(phone) {
-        activePhone = phone;
-        localStorage.setItem('active_phone', phone);
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('patientDashboard').classList.remove('hidden');
-        document.getElementById('logoutBtn').classList.remove('hidden');
-        syncData();
-    }
-
-    function syncData() {
-        // مزامنة الإعدادات (فيسبوك، موقع، هاتف)
-        db.ref('clinic_info').on('value', s => {
-            const v = s.val();
-            if(v) {
-                document.getElementById('uiFB').href = v.fb;
-                document.getElementById('uiLoc').href = `https://www.google.com/maps?q=${v.loc}`;
-                document.getElementById('uiCall').onclick = () => window.location.href = `tel:${v.phone}`;
-                // ملء الخانات للمدير أيضاً
-                document.getElementById('inFB').value = v.fb || "";
-                document.getElementById('inLoc').value = v.loc || "";
-                document.getElementById('inPhone').value = v.phone || "";
-            }
-        });
-
-        // مزامنة المواعيد
-        db.ref('appointments').on('value', snap => {
-            const data = snap.val();
-            if(!data) return;
-            for(let id in data) {
-                if(data[id].patientPhone === activePhone) {
-                    const item = data[id];
-                    document.getElementById('displayPName').innerText = item.patientName;
-                    const st = document.getElementById('displayStatus');
-                    const card = document.getElementById('statusCard');
-                    if(item.status === 'done') {
-                        st.innerHTML = `✅ تم تأكيد موعدك يوم:<br><span class="text-2xl text-gold">${item.appDate}</span>`;
-                        card.classList.remove('animate-status');
-                    } else {
-                        st.innerHTML = "⏳ طلبك قيد المراجعة...<br><small class='text-[10px] opacity-70'>سنخبرك فور تأكيد التاريخ</small>";
-                        card.classList.add('animate-status');
-                    }
-                }
-            }
-            if(document.getElementById('adminDashboard').offsetParent) renderAdmin(data);
-        });
-    }
-
-    // وظائف المدير
-    function saveSettings() {
-        const info = {
-            fb: document.getElementById('inFB').value,
-            loc: document.getElementById('inLoc').value,
-            phone: document.getElementById('inPhone').value
-        };
-        db.ref('clinic_info').set(info).then(() => alert("تم تحديث بيانات العيادة بنجاح!"));
-    }
-
+    // --- وظائف المدير ---
     let clicks = 0;
-    document.getElementById('adminTrigger').onclick = () => {
+    function triggerAdmin() {
         clicks++;
-        if(clicks >= 5) {
-            if(prompt("كلمة السر") === "1234") {
-                document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-                document.getElementById('adminDashboard').classList.remove('hidden');
+        if (clicks === 5) {
+            if (prompt("كلمة سر المدير:") === "1234") {
+                document.getElementById('formSection').style.display = 'none';
+                document.getElementById('adminArea').style.display = 'block';
+                loadAdminData();
             }
             clicks = 0;
         }
-    };
+    }
 
-    function loadDateData() { document.getElementById('dateDetails').classList.remove('hidden'); }
+    function saveLimit() {
+        const l = document.getElementById('limitConfig').value;
+        if(l) db.ref('settings/limit').set(parseInt(l)).then(() => alert("تم تحديث الحد اليومي بنجاح"));
+    }
 
-    function renderAdmin(data) {
-        const list = document.getElementById('adminPatientList');
-        const selDate = document.getElementById('adminDate').value;
-        list.innerHTML = "<p class='text-[10px] font-bold text-gray-400'>الطلبات الجديدة:</p>";
-        for(let id in data) {
-            const itm = data[id];
-            if(itm.status === 'pending') {
-                list.innerHTML += `
-                <div class="p-3 bg-gray-50 rounded-xl border flex justify-between items-center text-xs">
-                    <div><b>${itm.patientName}</b><br><small>${itm.patientArea}</small></div>
-                    <button onclick="confirmApp('${id}')" class="bg-emerald text-white px-3 py-2 rounded-lg font-bold">تأكيد</button>
+    function addOffDay() {
+        const d = document.getElementById('blockDate').value;
+        if(d) db.ref('offDays').push(d).then(() => alert("تم إغلاق التاريخ المحدد"));
+    }
+
+    function loadAdminData() {
+        const list = document.getElementById('bookingList');
+        db.ref('bookings').on('value', snap => {
+            list.innerHTML = '';
+            snap.forEach(child => {
+                const b = child.val();
+                list.innerHTML += `<div class="appointment-box">
+                    <strong>${b.name}</strong> (${b.phone})<br>
+                    📅 ${b.date} | ⏰ ${b.time}
+                    <button class="btn-del" onclick="deleteBooking('${child.key}')">حذف الموعد</button>
                 </div>`;
-            } else if(selDate && itm.appDate === selDate) {
-                list.innerHTML += `<div class="p-2 bg-green-50 text-emerald-800 text-[10px] rounded border border-green-100">✅ مريض مؤكد: ${itm.patientName}</div>`;
-            }
-        }
+            });
+        });
     }
 
-    function confirmApp(id) {
-        const d = document.getElementById('adminDate').value;
-        if(!d) return alert("اختر التاريخ من الأجندة أولاً");
-        db.ref('appointments/' + id).update({ status: 'done', appDate: d });
-    }
-
-    document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('active_phone'); location.reload(); };
-    if(activePhone) login(activePhone);
+    function deleteBooking(key) { if(confirm("هل تريد حذف الموعد فعلاً؟")) db.ref('bookings').child(key).remove(); }
 </script>
-
 </body>
 </html>
