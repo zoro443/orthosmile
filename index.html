@@ -3,120 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أورثو سمايل</title>
+    <title>أورثو سمايل - Ortho Smile</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f7f6; text-align: center; direction: rtl; padding: 20px; }
-        .box { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 15px; border-top: 5px solid #d4af37; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .logo { width: 60px; height: 60px; background: #004d40; color: #d4af37; border-radius: 50%; margin: 0 auto 10px; line-height: 60px; font-weight: bold; cursor: pointer; border: 2px solid #d4af37; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        button { background: #004d40; color: white; border: none; cursor: pointer; font-weight: bold; }
-        .admin-panel { display: none; background: #f9f9f9; padding: 15px; border: 1px dashed #004d40; margin-top: 20px; text-align: right; }
-        .item { background: white; padding: 10px; margin: 5px 0; border-right: 3px solid #d4af37; font-size: 14px; }
+        :root { --primary: #004d40; --gold: #d4af37; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; direction: rtl; text-align: center; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--gold); }
+        .logo-btn { width: 70px; height: 70px; background: var(--primary); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-weight: bold; border: 2px solid var(--gold); cursor: pointer; font-size: 20px; user-select: none; }
+        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .msg-error { color: #c62828; font-weight: bold; display: none; background: #ffebee; padding: 10px; border-radius: 8px; margin: 10px 0; border: 1px solid #ffcdd2; }
+        .admin-section { display: none; background: #f9f9f9; padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px dashed var(--primary); text-align: right; }
+        .appt-item { background: white; padding: 10px; margin: 8px 0; border-radius: 8px; border-right: 4px solid var(--gold); font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <div class="logo" onclick="openAdmin()">OS</div>
-    <h2 style="color:#004d40; margin:0;">أورثو سمايل</h2>
-    
-    <div id="userSide">
-        <input type="text" id="name" placeholder="الاسم الكامل">
-        <input type="tel" id="phone" placeholder="الهاتف (05/06/07)" maxlength="10">
-        <input type="date" id="date" onchange="check()">
-        <select id="time"><option value="">اختر التاريخ</option></select>
-        <button id="btn" onclick="send()">تأكيد الحجز</button>
+<div class="container">
+    <div onclick="adminClick()">
+        <div class="logo-btn">OS</div>
+        <h2 style="color: var(--primary); margin: 0;">أورثو سمايل</h2>
+        <p style="color: #888; font-size: 13px;">د. مريم - عيادة تقويم الأسنان</p>
     </div>
 
-    <div id="adminSide" class="admin-panel">
-        <h3 style="text-align:center;">إدارة العيادة</h3>
-        <label>الحد اليومي:</label>
-        <input type="number" id="limitNum" placeholder="10">
-        <button onclick="setLimit()">حفظ</button>
+    <div id="userPart">
+        <input type="text" id="pName" placeholder="الاسم الكامل للمريض">
+        <input type="tel" id="pPhone" placeholder="الهاتف (05/06/07XXXXXXXX)" maxlength="10">
+        <input type="date" id="pDate" onchange="checkSystem()">
+        
+        <p id="statusMsg" class="msg-error"></p>
+        
+        <select id="pTime"><option value="">اختر التاريخ أولاً</option></select>
+        <button id="bookBtn" onclick="confirmBooking()">تأكيد الحجز</button>
+    </div>
+
+    <div id="adminPart" class="admin-section">
+        <h3 style="text-align:center; color: var(--primary);">⚙️ إعدادات العيادة</h3>
+        
+        <label>الحد الأقصى اليومي (عدد المرضى):</label>
+        <input type="number" id="limitInp" placeholder="مثلاً: 10">
+        <button onclick="saveNewLimit()">تحديث الحد</button>
+        
         <hr>
-        <h4>المواعيد:</h4>
-        <div id="list">..</div>
-        <button onclick="location.reload()" style="background:#666">خروج</button>
+        <label>إغلاق تاريخ معين (عطلة):</label>
+        <input type="date" id="offDayInp">
+        <button onclick="addOffDay()" style="background:#555">إضافة عطلة</button>
+
+        <h4>قائمة المواعيد المحجوزة:</h4>
+        <div id="bookingList">جاري التحميل...</div>
+        <button onclick="location.reload()" style="background:#888">تسجيل الخروج</button>
     </div>
 </div>
 
 <script>
-    // ضع بياناتك هنا بدقة
+    // --- ⚠️ استبدل هذه البيانات ببيانات Firebase الخاصة بك ---
     const firebaseConfig = {
-        apiKey: "AIza...", 
-        databaseURL: "https://...",
-        projectId: "..."
+        apiKey: "AIzaSy...", 
+        databaseURL: "https://orthosmile-default-rtdb.firebaseio.com",
+        projectId: "orthosmile-xxxx"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    async function check() {
-        const d = document.getElementById('date').value;
-        const sel = document.getElementById('time');
-        const btn = document.getElementById('btn');
+    // --- نظام التحقق من التوافر والحد اليومي ---
+    async function checkSystem() {
+        const date = document.getElementById('pDate').value;
+        const msg = document.getElementById('statusMsg');
+        const btn = document.getElementById('bookBtn');
+        const sel = document.getElementById('pTime');
 
-        if (new Date(d).getDay() === 5) { alert("الجمعة عطلة"); btn.disabled = true; return; }
+        // 1. منع يوم الجمعة تلقائياً
+        if (new Date(date).getDay() === 5) {
+            return showErr("العيادة مغلقة يوم الجمعة");
+        }
 
-        const snap = await db.ref('bookings').orderByChild('date').equalTo(d).once('value');
-        const limitSnap = await db.ref('settings/limit').once('value');
-        const max = limitSnap.val() || 10;
+        // 2. التحقق من العطلات اليدوية التي أضافها المدير
+        const offSnapshot = await db.ref('offDays').once('value');
+        let isOff = false;
+        offSnapshot.forEach(snap => { if(snap.val() === date) isOff = true; });
+        if (isOff) return showErr("هذا التاريخ عطلة رسمية بالعيادة");
 
-        if (snap.numChildren() >= max) {
-            alert("اكتمل العدد لهذا اليوم");
-            btn.disabled = true;
-        } else {
-            btn.disabled = false;
-            sel.innerHTML = "";
-            for(let i=9; i<16; i++) {
-                let op = document.createElement('option');
-                op.value = i+":00"; op.text = i+":00";
-                sel.appendChild(op);
-            }
+        // 3. التحقق من الحد اليومي للمرضى
+        const limitSnap = await db.ref('settings/dailyLimit').once('value');
+        const maxLimit = limitSnap.val() || 10; // 10 كحد افتراضي
+        
+        const currentBookings = await db.ref('bookings').orderByChild('date').equalTo(date).once('value');
+        
+        if (currentBookings.numChildren() >= maxLimit) {
+            return showErr("عذراً! اكتمل عدد الحجوزات لهذا اليوم (" + maxLimit + ")");
+        }
+
+        // إذا كان كل شيء متاحاً
+        msg.style.display = 'none';
+        btn.style.display = 'block';
+        sel.innerHTML = '';
+        for (let h=9; h<16; h++) { 
+            let t = h + ":00";
+            let opt = document.createElement('option'); opt.value = t; opt.text = t; sel.appendChild(opt);
         }
     }
 
-    function send() {
-        const n = document.getElementById('name').value;
-        const p = document.getElementById('phone').value;
-        const d = document.getElementById('date').value;
-        const t = document.getElementById('time').value;
-        if (!/^(05|06|07)[0-9]{8}$/.test(p)) { alert("رقم خاطئ"); return; }
-        
-        db.ref('bookings').push({name:n, phone:p, date:d, time:t}).then(()=> {
-            alert("تم الحجز!"); location.reload();
+    function showErr(text) {
+        const msg = document.getElementById('statusMsg');
+        msg.innerText = "⚠️ " + text;
+        msg.style.display = 'block';
+        document.getElementById('bookBtn').style.display = 'none';
+        document.getElementById('pTime').innerHTML = '<option>غير متاح</option>';
+    }
+
+    // --- حفظ الحجز مع قيود الهاتف ---
+    function confirmBooking() {
+        const name = document.getElementById('pName').value;
+        const phone = document.getElementById('pPhone').value;
+        const date = document.getElementById('pDate').value;
+        const time = document.getElementById('pTime').value;
+        const phoneReg = /^(05|06|07)[0-9]{8}$/;
+
+        if (!name || !phoneReg.test(phone) || !date || !time) {
+            alert("خطأ: يرجى إدخال اسمك ورقم هاتف جزائري صحيح (10 أرقام تبدأ بـ 05/06/07)");
+            return;
+        }
+
+        db.ref('bookings').push({ name, phone, date, time }).then(() => {
+            alert("تم تسجيل حجزك بنجاح!");
+            location.reload();
         });
     }
 
-    let c = 0;
-    function openAdmin() {
-        c++;
-        if (c === 5) {
-            let p = prompt("السر:");
-            if (p === "1234") {
-                document.getElementById('userSide').style.display='none';
-                document.getElementById('adminSide').style.display='block';
-                load();
+    // --- نظام المدير (السر: 1234) ---
+    let counter = 0;
+    function adminClick() {
+        counter++;
+        if (counter === 5) {
+            let pass = prompt("كلمة سر المدير:");
+            if (pass === "1234") {
+                document.getElementById('userPart').style.display = 'none';
+                document.getElementById('adminPart').style.display = 'block';
+                loadBookings();
             }
-            c = 0;
+            counter = 0;
         }
     }
 
-    function setLimit() {
-        const v = document.getElementById('limitNum').value;
-        db.ref('settings/limit').set(parseInt(v)).then(()=>alert("تم"));
+    function saveNewLimit() {
+        const val = document.getElementById('limitInp').value;
+        if(val) db.ref('settings/dailyLimit').set(parseInt(val)).then(() => alert("تم تحديث الحد اليومي"));
     }
 
-    function load() {
-        db.ref('bookings').on('value', s => {
-            const l = document.getElementById('list'); l.innerHTML = "";
-            s.forEach(child => {
-                const b = child.val();
-                l.innerHTML += `<div class="item">${b.name} - ${b.phone}<br>${b.date} / ${b.time}</div>`;
+    function addOffDay() {
+        const d = document.getElementById('offDayInp').value;
+        if(d) db.ref('offDays').push(d).then(() => alert("تم إغلاق التاريخ المختار"));
+    }
+
+    function loadBookings() {
+        db.ref('bookings').on('value', snap => {
+            const list = document.getElementById('bookingList');
+            list.innerHTML = '';
+            snap.forEach(c => {
+                const b = c.val();
+                list.innerHTML += `<div class="appt-item">
+                    <b>${b.name}</b> | ${b.phone}<br>${b.date} - ${b.time}
+                    <button onclick="removeAppt('${c.key}')" style="width:auto; background:red; padding:2px 10px; font-size:10px; margin-top:5px">حذف</button>
+                </div>`;
             });
         });
     }
+    function removeAppt(id) { if(confirm("هل تريد حذف الموعد؟")) db.ref('bookings').child(id).remove(); }
 </script>
 </body>
 </html>
