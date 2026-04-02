@@ -7,145 +7,116 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #004d40; --gold: #d4af37; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; direction: rtl; text-align: center; }
-        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--gold); }
-        .logo-circle { width: 70px; height: 70px; background: var(--primary); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-weight: bold; border: 2px solid var(--gold); cursor: pointer; font-size: 20px; }
-        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .error-msg { color: #c62828; font-weight: bold; display: none; background: #ffebee; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .admin-panel { display: none; background: #f9f9f9; padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px dashed var(--primary); text-align: right; }
-        .appointment-item { background: white; padding: 10px; margin: 8px 0; border-radius: 8px; border-right: 4px solid var(--gold); font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        body { font-family: Arial, sans-serif; background: #f4f7f6; text-align: center; direction: rtl; padding: 20px; }
+        .box { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 15px; border-top: 5px solid #d4af37; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .logo { width: 60px; height: 60px; background: #004d40; color: #d4af37; border-radius: 50%; margin: 0 auto 10px; line-height: 60px; font-weight: bold; cursor: pointer; border: 2px solid #d4af37; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { background: #004d40; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .admin-panel { display: none; background: #f9f9f9; padding: 15px; border: 1px dashed #004d40; margin-top: 20px; text-align: right; }
+        .item { background: white; padding: 10px; margin: 5px 0; border-right: 3px solid #d4af37; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div onclick="handleAdminLogin()">
-        <div class="logo-circle">OS</div>
-        <h2 style="color: var(--primary); margin: 0;">أورثو سمايل</h2>
-        <p style="color: #888; font-size: 13px;">إدارة مواعيد العيادة</p>
+<div class="box">
+    <div class="logo" onclick="openAdmin()">OS</div>
+    <h2 style="color:#004d40; margin:0;">أورثو سمايل</h2>
+    
+    <div id="userSide">
+        <input type="text" id="name" placeholder="الاسم الكامل">
+        <input type="tel" id="phone" placeholder="الهاتف (05/06/07)" maxlength="10">
+        <input type="date" id="date" onchange="check()">
+        <select id="time"><option value="">اختر التاريخ</option></select>
+        <button id="btn" onclick="send()">تأكيد الحجز</button>
     </div>
 
-    <div id="userSection">
-        <input type="text" id="pName" placeholder="الاسم الكامل">
-        <input type="tel" id="pPhone" placeholder="رقم الهاتف (05/06/07XXXXXXXX)" maxlength="10">
-        <input type="date" id="pDate" onchange="checkAvailability()">
-        <p id="errorMsg" class="error-msg"></p>
-        <select id="pTime"><option value="">اختر التاريخ أولاً</option></select>
-        <button id="bookBtn" onclick="saveBooking()">تأكيد الحجز</button>
-    </div>
-
-    <div id="adminSection" class="admin-panel">
-        <h3 style="text-align:center; color: var(--primary);">لوحة المدير</h3>
+    <div id="adminSide" class="admin-panel">
+        <h3 style="text-align:center;">إدارة العيادة</h3>
         <label>الحد اليومي:</label>
-        <input type="number" id="dailyLimitInput">
-        <button onclick="updateLimit()">حفظ الحد</button>
-        <label>إغلاق يوم:</label>
-        <input type="date" id="offDateInput">
-        <button onclick="setOffDay()" style="background:#555">إضافة عطلة</button>
+        <input type="number" id="limitNum" placeholder="10">
+        <button onclick="setLimit()">حفظ</button>
+        <hr>
         <h4>المواعيد:</h4>
-        <div id="listContainer">...</div>
-        <button onclick="location.reload()" style="background:#888">خروج</button>
+        <div id="list">..</div>
+        <button onclick="location.reload()" style="background:#666">خروج</button>
     </div>
 </div>
 
 <script>
-    const config = {
-        apiKey: "ضع_هنا_كود_API",
-        databaseURL: "ضع_هنا_رابط_القاعدة",
-        projectId: "ضع_هنا_اسم_المشروع"
+    // ضع بياناتك هنا بدقة
+    const firebaseConfig = {
+        apiKey: "AIza...", 
+        databaseURL: "https://...",
+        projectId: "..."
     };
-    firebase.initializeApp(config);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    async function checkAvailability() {
-        const date = document.getElementById('pDate').value;
-        const msg = document.getElementById('errorMsg');
-        const btn = document.getElementById('bookBtn');
-        const sel = document.getElementById('pTime');
+    async function check() {
+        const d = document.getElementById('date').value;
+        const sel = document.getElementById('time');
+        const btn = document.getElementById('btn');
 
-        if (new Date(date).getDay() === 5) return showError("الجمعة عطلة");
+        if (new Date(d).getDay() === 5) { alert("الجمعة عطلة"); btn.disabled = true; return; }
 
-        const offSnapshot = await db.ref('offDays').once('value');
-        let isOff = false;
-        offSnapshot.forEach(c => { if(c.val() === date) isOff = true; });
-        if (isOff) return showError("هذا اليوم عطلة");
-
+        const snap = await db.ref('bookings').orderByChild('date').equalTo(d).once('value');
         const limitSnap = await db.ref('settings/limit').once('value');
-        const maxLimit = limitSnap.val() || 10;
-        const bookingsSnap = await db.ref('bookings').orderByChild('date').equalTo(date).once('value');
+        const max = limitSnap.val() || 10;
+
+        if (snap.numChildren() >= max) {
+            alert("اكتمل العدد لهذا اليوم");
+            btn.disabled = true;
+        } else {
+            btn.disabled = false;
+            sel.innerHTML = "";
+            for(let i=9; i<16; i++) {
+                let op = document.createElement('option');
+                op.value = i+":00"; op.text = i+":00";
+                sel.appendChild(op);
+            }
+        }
+    }
+
+    function send() {
+        const n = document.getElementById('name').value;
+        const p = document.getElementById('phone').value;
+        const d = document.getElementById('date').value;
+        const t = document.getElementById('time').value;
+        if (!/^(05|06|07)[0-9]{8}$/.test(p)) { alert("رقم خاطئ"); return; }
         
-        if (bookingsSnap.numChildren() >= maxLimit) return showError("اكتمل العدد (" + maxLimit + ")");
-
-        msg.style.display = 'none';
-        btn.style.display = 'block';
-        sel.innerHTML = '';
-        for (let h=9; h<17; h++) { 
-            let t = h + ":00";
-            let opt = document.createElement('option'); opt.value = t; opt.text = t; sel.appendChild(opt);
-        }
-    }
-
-    function showError(text) {
-        const msg = document.getElementById('errorMsg');
-        msg.innerText = "⚠️ " + text;
-        msg.style.display = 'block';
-        document.getElementById('bookBtn').style.display = 'none';
-    }
-
-    function saveBooking() {
-        const n = document.getElementById('pName').value;
-        const p = document.getElementById('pPhone').value;
-        const d = document.getElementById('pDate').value;
-        const t = document.getElementById('pTime').value;
-        const reg = /^(05|06|07)[0-9]{8}$/;
-
-        if (!n || !reg.test(p) || !d || !t) {
-            alert("خطأ في البيانات (الهاتف 10 أرقام ويبدأ بـ 05/06/07)");
-            return;
-        }
-
-        db.ref('bookings').push({ name: n, phone: p, date: d, time: t }).then(() => {
-            alert("تم الحجز!");
-            location.reload();
+        db.ref('bookings').push({name:n, phone:p, date:d, time:t}).then(()=> {
+            alert("تم الحجز!"); location.reload();
         });
     }
 
-    let clicks = 0;
-    function handleAdminLogin() {
-        clicks++;
-        if (clicks === 5) {
-            if (prompt("السر:") === "1234") {
-                document.getElementById('userSection').style.display = 'none';
-                document.getElementById('adminSection').style.display = 'block';
-                loadAdminData();
+    let c = 0;
+    function openAdmin() {
+        c++;
+        if (c === 5) {
+            let p = prompt("السر:");
+            if (p === "1234") {
+                document.getElementById('userSide').style.display='none';
+                document.getElementById('adminSide').style.display='block';
+                load();
             }
-            clicks = 0;
+            c = 0;
         }
     }
 
-    function updateLimit() {
-        const val = document.getElementById('dailyLimitInput').value;
-        if(val) db.ref('settings/limit').set(parseInt(val)).then(() => alert("تم"));
+    function setLimit() {
+        const v = document.getElementById('limitNum').value;
+        db.ref('settings/limit').set(parseInt(v)).then(()=>alert("تم"));
     }
 
-    function setOffDay() {
-        const d = document.getElementById('offDateInput').value;
-        if(d) db.ref('offDays').push(d).then(() => alert("تم"));
-    }
-
-    function loadAdminData() {
-        db.ref('bookings').on('value', snap => {
-            const list = document.getElementById('listContainer');
-            list.innerHTML = '';
-            snap.forEach(c => {
-                const b = c.val();
-                list.innerHTML += `<div class="appointment-item">${b.name} | ${b.phone}<br>${b.date} - ${b.time} <button onclick="deleteB('${c.key}')" style="width:auto; background:red; padding:2px; font-size:10px">X</button></div>`;
+    function load() {
+        db.ref('bookings').on('value', s => {
+            const l = document.getElementById('list'); l.innerHTML = "";
+            s.forEach(child => {
+                const b = child.val();
+                l.innerHTML += `<div class="item">${b.name} - ${b.phone}<br>${b.date} / ${b.time}</div>`;
             });
         });
     }
-    function deleteB(id) { if(confirm("حذف؟")) db.ref('bookings').child(id).remove(); }
 </script>
 </body>
 </html>
