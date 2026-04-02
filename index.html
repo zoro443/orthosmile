@@ -31,68 +31,53 @@
         <input type="text" id="pName" placeholder="الاسم الكامل">
         <input type="tel" id="pPhone" placeholder="رقم الهاتف (05/06/07XXXXXXXX)" maxlength="10">
         <input type="date" id="pDate" onchange="checkAvailability()">
-        
         <p id="errorMsg" class="error-msg"></p>
-        
         <select id="pTime"><option value="">اختر التاريخ أولاً</option></select>
         <button id="bookBtn" onclick="saveBooking()">تأكيد الحجز</button>
     </div>
 
     <div id="adminSection" class="admin-panel">
         <h3 style="text-align:center; color: var(--primary);">لوحة المدير</h3>
-        
-        <label>الحد الأقصى للمرضى يومياً:</label>
+        <label>الحد اليومي:</label>
         <input type="number" id="dailyLimitInput">
         <button onclick="updateLimit()">حفظ الحد</button>
-        
-        <label>إغلاق يوم (عطلة):</label>
+        <label>إغلاق يوم:</label>
         <input type="date" id="offDateInput">
         <button onclick="setOffDay()" style="background:#555">إضافة عطلة</button>
-
-        <h4>المواعيد المحجوزة:</h4>
-        <div id="listContainer">جاري التحميل...</div>
+        <h4>المواعيد:</h4>
+        <div id="listContainer">...</div>
         <button onclick="location.reload()" style="background:#888">خروج</button>
     </div>
 </div>
 
 <script>
-    // --- إعدادات Firebase (ضع بياناتك هنا) ---
     const config = {
-        apiKey: "YOUR_API_KEY",
-        databaseURL: "YOUR_DATABASE_URL",
-        projectId: "YOUR_PROJECT_ID"
+        apiKey: "ضع_هنا_كود_API",
+        databaseURL: "ضع_هنا_رابط_القاعدة",
+        projectId: "ضع_هنا_اسم_المشروع"
     };
     firebase.initializeApp(config);
     const db = firebase.database();
 
-    // --- منطق التحقق والحدود ---
     async function checkAvailability() {
         const date = document.getElementById('pDate').value;
         const msg = document.getElementById('errorMsg');
         const btn = document.getElementById('bookBtn');
         const sel = document.getElementById('pTime');
 
-        // 1. منع الجمعة تلقائياً
-        if (new Date(date).getDay() === 5) {
-            return showError("العيادة مغلقة يوم الجمعة");
-        }
+        if (new Date(date).getDay() === 5) return showError("الجمعة عطلة");
 
-        // 2. التحقق من العطلات اليدوية
         const offSnapshot = await db.ref('offDays').once('value');
         let isOff = false;
         offSnapshot.forEach(c => { if(c.val() === date) isOff = true; });
-        if (isOff) return showError("هذا اليوم عطلة في العيادة");
+        if (isOff) return showError("هذا اليوم عطلة");
 
-        // 3. التحقق من الحد اليومي
         const limitSnap = await db.ref('settings/limit').once('value');
         const maxLimit = limitSnap.val() || 10;
         const bookingsSnap = await db.ref('bookings').orderByChild('date').equalTo(date).once('value');
         
-        if (bookingsSnap.numChildren() >= maxLimit) {
-            return showError("اكتمل عدد المواعيد لهذا اليوم (" + maxLimit + ")");
-        }
+        if (bookingsSnap.numChildren() >= maxLimit) return showError("اكتمل العدد (" + maxLimit + ")");
 
-        // النجاح
         msg.style.display = 'none';
         btn.style.display = 'block';
         sel.innerHTML = '';
@@ -107,7 +92,6 @@
         msg.innerText = "⚠️ " + text;
         msg.style.display = 'block';
         document.getElementById('bookBtn').style.display = 'none';
-        document.getElementById('pTime').innerHTML = '<option>غير متاح</option>';
     }
 
     function saveBooking() {
@@ -118,22 +102,21 @@
         const reg = /^(05|06|07)[0-9]{8}$/;
 
         if (!n || !reg.test(p) || !d || !t) {
-            alert("تأكد من الاسم ورقم الهاتف (10 أرقام تبدأ بـ 05/06/07)");
+            alert("خطأ في البيانات (الهاتف 10 أرقام ويبدأ بـ 05/06/07)");
             return;
         }
 
         db.ref('bookings').push({ name: n, phone: p, date: d, time: t }).then(() => {
-            alert("تم الحجز بنجاح!");
+            alert("تم الحجز!");
             location.reload();
         });
     }
 
-    // --- وظائف المدير ---
     let clicks = 0;
     function handleAdminLogin() {
         clicks++;
         if (clicks === 5) {
-            if (prompt("كلمة السر:") === "1234") {
+            if (prompt("السر:") === "1234") {
                 document.getElementById('userSection').style.display = 'none';
                 document.getElementById('adminSection').style.display = 'block';
                 loadAdminData();
@@ -144,12 +127,12 @@
 
     function updateLimit() {
         const val = document.getElementById('dailyLimitInput').value;
-        if(val) db.ref('settings/limit').set(parseInt(val)).then(() => alert("تم التحديث"));
+        if(val) db.ref('settings/limit').set(parseInt(val)).then(() => alert("تم"));
     }
 
     function setOffDay() {
         const d = document.getElementById('offDateInput').value;
-        if(d) db.ref('offDays').push(d).then(() => alert("تم إغلاق اليوم"));
+        if(d) db.ref('offDays').push(d).then(() => alert("تم"));
     }
 
     function loadAdminData() {
@@ -158,14 +141,11 @@
             list.innerHTML = '';
             snap.forEach(c => {
                 const b = c.val();
-                list.innerHTML += `<div class="appointment-item">
-                    <b>${b.name}</b> | ${b.phone}<br>${b.date} - ${b.time}
-                    <button onclick="deleteB('${c.key}')" style="width:auto; background:red; padding:2px 10px; font-size:10px">حذف</button>
-                </div>`;
+                list.innerHTML += `<div class="appointment-item">${b.name} | ${b.phone}<br>${b.date} - ${b.time} <button onclick="deleteB('${c.key}')" style="width:auto; background:red; padding:2px; font-size:10px">X</button></div>`;
             });
         });
     }
-    function deleteB(id) { if(confirm("حذف الموعد؟")) db.ref('bookings').child(id).remove(); }
+    function deleteB(id) { if(confirm("حذف؟")) db.ref('bookings').child(id).remove(); }
 </script>
 </body>
 </html>
